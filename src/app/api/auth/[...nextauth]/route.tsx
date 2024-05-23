@@ -12,8 +12,7 @@ export const authOptions = {
     }),
   ],
   pages: {
-    signIn: "/singnin"
-    // secret: process.env.JWT_SECRET as string
+    signIn: "/",
   },
 }
 
@@ -23,6 +22,5 @@ const authHandler = (req: NextApiRequest, res: NextApiResponse) => NextAuth(req,
 export const GET = authHandler;
 export const POST = authHandler;
 
-export default authHandler;
 
 

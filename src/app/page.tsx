@@ -4,6 +4,8 @@ import Image from "next/image";
 import task from "../../public/assets/task.png"
 
 export default function Home() {
+
+
   return (
     <div className={styles.container}>
       <Head>

@@ -1,8 +1,6 @@
 "use client"
-// import { GetServerSideProps } from "next";
 import  styles  from "./styles.module.css";
 import Head from "next/head";
-// import { getSession } from "next-auth/react";
 import { Textarea } from "@/components/textarea";
 import { FiShare2 } from "react-icons/fi";
 import { FaTrash } from "react-icons/fa";
@@ -27,23 +25,31 @@ export default function Dashboard({user}: HomeProps) {
     async function handleRegisterTask(e: FormEvent) {
         e.preventDefault();
 
-        if(input === "") return;
+        if (input === "") return;
 
+        
         try {
+
+            if (!user || !user.email) {
+                console.error("Faça login");
+                return;
+            }
+            
             await addDoc(collection(db, "tarefas"), {
                 tarefa: input,
-                created: new Date(),
                 user: user?.email,
                 public: publicTask,
+                created: new Date(),
             });
 
             setInput("");
-            setPublicTask(false)
+            setPublicTask(false);
 
-        } catch(err) {
-            console.log(err)
-        }
+            } catch (err) {
+            console.log(err);
+            }   
     }
+
 
     return(
         <div className={styles.container}>
@@ -105,24 +111,3 @@ export default function Dashboard({user}: HomeProps) {
         </div>
     )
 }
-
-// export const getServerSideProps: GetServerSideProps = async ({ req }) => {
-//     const session = await getSession({ req });
-
-//     if(!session?.user) {
-//         return {
-//             redirect:{
-//                 destination: "/",
-//                 permanent: false,
-//             },
-//         };
-//     }
-
-//     return {
-//         props: {
-//             user: {
-//                 email: session?.user?.email,
-//             },
-//         },
-//     }
-// }
