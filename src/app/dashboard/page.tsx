@@ -7,14 +7,10 @@ import { FaTrash } from "react-icons/fa";
 import { ChangeEvent, FormEvent, useState } from "react";
 import { db } from "@/services/firebaseConnection";
 import { addDoc, collection } from "firebase/firestore";
+import { useSession, signIn } from "next-auth/react";
 
-interface HomeProps {
-    user: {
-        email: string;
-    }
-}
-
-export default function Dashboard({user}: HomeProps) {
+export default function Dashboard() {
+    const { data: session, status } = useSession();
     const [input, setInput] = useState("")
     const [publicTask, setPublicTask] = useState(false)
 
@@ -27,17 +23,16 @@ export default function Dashboard({user}: HomeProps) {
 
         if (input === "") return;
 
+        if (status !== "authenticated") {
+            signIn();
+            return;
+          }
+
         
         try {
-
-            if (!user || !user.email) {
-                console.error("Faça login");
-                return;
-            }
-            
             await addDoc(collection(db, "tarefas"), {
                 tarefa: input,
-                user: user?.email,
+                user: session?.user?.email,
                 public: publicTask,
                 created: new Date(),
             });
@@ -49,6 +44,15 @@ export default function Dashboard({user}: HomeProps) {
             console.log(err);
             }   
     }
+
+    if (status === "loading") {
+        return <div>Carregando...</div>;
+      }
+    
+      if (status === "unauthenticated") {
+        signIn();
+        return null;
+      }
 
 
     return(
