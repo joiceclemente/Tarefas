@@ -4,15 +4,58 @@ import Head from "next/head";
 import { Textarea } from "@/components/textarea";
 import { FiShare2 } from "react-icons/fi";
 import { FaTrash } from "react-icons/fa";
-import { ChangeEvent, FormEvent, useState } from "react";
+import { ChangeEvent, FormEvent, useState, useEffect } from "react";
 import { db } from "@/services/firebaseConnection";
-import { addDoc, collection } from "firebase/firestore";
+import { addDoc, collection, query, orderBy, where, onSnapshot, doc, deleteDoc } from "firebase/firestore";
 import { useSession, signIn } from "next-auth/react";
+import Link from "next/link";
+
+interface TaskProps {
+    id: string;
+    created: Date;
+    public: boolean;
+    tarefa: string;
+    user: string;
+}
 
 export default function Dashboard() {
     const { data: session, status } = useSession();
     const [input, setInput] = useState("")
     const [publicTask, setPublicTask] = useState(false)
+    const [tasks, setTasks] = useState<TaskProps[]>([])
+
+    useEffect(() => {
+        if(!session?.user?.email) return;
+
+        async function loadTarefas() {
+            
+            const tarefasRef = collection(db, "tarefas")
+            const q = query (
+                tarefasRef,
+                orderBy("created", "desc"),
+                where("user", "==", session?.user?.email)
+            )
+
+            onSnapshot(q, (snapshot) => {
+                let lista = [] as TaskProps[];
+
+                snapshot.forEach((doc) => {
+                    lista.push({
+                        id: doc.id,
+                        tarefa: doc.data().tarefa,
+                        created: doc.data().created,
+                        user: doc.data().user,
+                        public: doc.data().public,
+                    })
+                })
+
+                setTasks(lista);
+            });
+        }
+
+        loadTarefas()
+    }, [session?.user?.email])
+
 
     function handleChangePublic(e: ChangeEvent<HTMLInputElement>) {
         setPublicTask(e.target.checked)
@@ -54,6 +97,18 @@ export default function Dashboard() {
         return null;
       }
 
+      async function handleShare(id: string) {
+        await navigator.clipboard.writeText(
+            `${process.env.NEXT_PUBLIC_URL}/task/${id}`
+        );
+        alert("Url copiada com sucesso")
+      }
+
+      async function handleDeleteTask(id: string) {
+        const docRef = doc(db, "tarefas", id)
+        await deleteDoc(docRef)
+      }
+
 
     return(
         <div className={styles.container}>
@@ -91,24 +146,34 @@ export default function Dashboard() {
                 <section className={styles.taskContainer}>
                     <h1>Minhas tarefas</h1>
 
-                    <article className={styles.task}>
+                    {tasks.map((item) => (
+                        <article key={item.id} className={styles.task}>
 
-                        <div className={styles.tagContainer}>
-                            <label className={styles.tag}>PUBLICO</label>
-                            <button className={styles.shareButton}>
-                                <FiShare2 size={22} color="#3183ff" />
-                            </button>
-                        </div>
-
-                        <div className={styles.taskContent}>
-                            <p>Minha primeira tarefa</p>
-                            <button className={styles.trashButton}>
-                                <FaTrash size={24} color="#ea3140"/>
-                            </button>
-
-                        </div>
-
-                    </article>
+                            {item.public && (
+                                <div className={styles.tagContainer}>
+                                <label className={styles.tag}>PUBLICO</label>
+                                <button className={styles.shareButton} onClick={() => handleShare(item.id)}>
+                                    <FiShare2 size={22} color="#3183ff" />
+                                </button>
+                            </div>
+                            )}
+                        
+                             <div className={styles.taskContent}>
+                                {item.public ? (
+                                    <Link href={`/task/${item.id}`}>
+                                    <p>{item.tarefa}</p>
+                                    </Link>
+                                ) : (
+                                    <p>{item.tarefa}</p>
+                                )}
+                                <button className={styles.trashButton} onClick={() => handleDeleteTask(item.id)}>
+                                    <FaTrash size={24} color="#ea3140"/>
+                                </button>
+                        
+                            </div>
+                        
+                        </article>
+                    ))}
 
                 </section>
             </main>
