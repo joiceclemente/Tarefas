@@ -2,9 +2,24 @@ import styles from "./page.module.css";
 import Head from "next/head";
 import Image from "next/image";
 import task from "../../public/assets/task.png"
+import { collection, getDocs } from "firebase/firestore";
+import { db } from "@/services/firebaseConnection";
 
-export default function Home() {
+async function fetchData() {
+  const commentRef = collection(db, "comments");
+  const postRef = collection(db, "tarefas");
 
+  const commentSnapshot = await getDocs(commentRef);
+  const postSnapshot = await getDocs(postRef);
+
+  return {
+    posts: postSnapshot.size || 0,
+    comments: commentSnapshot.size || 0,
+  };
+}
+
+export default async function Home() {
+  const data = await fetchData();
 
   return (
     <div className={styles.container}>
@@ -29,10 +44,10 @@ export default function Home() {
 
         <div className={styles.infoContent}>
           <section className={styles.box}>
-            <span>+12 posts</span>
+            <span>+{data.posts} posts</span>
           </section>
           <section className={styles.box}>
-            <span>90 comentarios</span>
+            <span>+{data.comments} comentarios</span>
           </section>
         </div>
 
@@ -41,3 +56,4 @@ export default function Home() {
     </div>
   );
 }
+
